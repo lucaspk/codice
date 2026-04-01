@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>O CÓDICE</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+
+    :root {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --sidebar: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: #717182;
+      --border: rgba(255, 255, 255, 0.1);
+      --nav-width: 280px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* --- COVER PAGE --- */
+    #cover {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+      transition: transform 1s cubic-bezier(0.85, 0, 0.15, 1);
+    }
+
+    #cover.hidden { transform: translateY(-100%); pointer-events: none; }
+
+    .cover-img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0.4;
+    }
+
+    .cover-content { position: relative; text-align: center; z-index: 1; }
+    .cover-content h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(3rem, 10vw, 6rem);
+      letter-spacing: 15px;
+      margin-bottom: 30px;
+      text-transform: uppercase;
+    }
+
+    .btn-read {
+      padding: 18px 50px;
+      background: transparent;
+      border: 1px solid white;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      cursor: pointer;
+      transition: 0.4s;
+    }
+
+    .btn-read:hover { background: white; color: black; }
+
+    /* --- SIDEBAR --- */
+    nav {
+      width: var(--nav-width);
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s ease;
+      position: relative;
+      z-index: 100;
+      transform: translateX(-100%);
+    }
+
+#cover {
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.cover-title {
+  width: min(92vw, 700px);
+  height: auto;
+  overflow: visible;
+}
+
+.title-base,
+.title-mask {
+  font-family: "Cinzel", serif;
+  font-size: 86px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.title-base {
+  fill: rgba(255, 255, 255, 0.28);
+}
+
+.title-mask {
+  fill: #fff;
+}
+
+.btn-read {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  padding: 16px 44px;
+  font-family: "Libre Baskerville", serif;
+  font-size: 14px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-read:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+    body.book-open nav { transform: translateX(0); }
+    nav.collapsed { width: 60px; }
+
+    .nav-top {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 80px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo { font-family: 'Cinzel', serif; letter-spacing: 2px; }
+    nav.collapsed .nav-logo { display: none; }
+
+    .toggle-btn {
+      background: transparent; border: none; color: white; cursor: pointer;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .toggle-btn span { width: 20px; height: 2px; background: currentColor; }
+
+    .nav-links { flex: 1; overflow-y: auto; padding: 10px 0; }
+    .nav-item {
+      padding: 16px 20px;
+      cursor: pointer;
+      color: var(--muted-foreground);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: 0.3s;
+    }
+    .nav-item.active { color: var(--foreground); background: var(--muted); }
+    nav.collapsed .nav-item span:last-child { display: none; }
+
+    /* --- CONTENT AREA --- */
+    main { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+    .two-fold { flex: 1; display: flex; width: 100%; transition: opacity 0.5s ease; }
+    .two-fold.changing { opacity: 0; }
+
+    .fold-title {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 10%;
+      border-right: 1px solid var(--border);
+    }
+
+    .fold-title h1 { font-family: 'Cinzel', serif; font-size: clamp(2rem, 5vw, 4rem); line-height: 1.1; }
+
+    .fold-text {
+      flex: 1.2;
+      overflow-y: auto;
+      padding: 15vh 10% 10vh 8%;
+    }
+
+    .fold-text::-webkit-scrollbar { width: 3px; }
+    .fold-text::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .poem-line {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      line-height: 1.8;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+      opacity: 0;
+      transform: translateY(15px);
+      animation: fadeInUp 0.7s forwards;
+    }
+
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+    /* --- FOOTER NAVIGATION BUTTONS --- */
+    .content-footer {
+      margin-top: 80px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted-foreground);
+      padding: 12px 24px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .footer-btn:hover { border-color: white; color: white; }
+    .footer-btn:disabled { opacity: 0.2; cursor: default; }
+
+    @media (max-width: 1024px) {
+      nav { position: fixed; height: 100%; transform: translateX(-100%); }
+      nav.open { transform: translateX(0) !important; width: 280px; }
+      .two-fold { flex-direction: column; overflow-y: auto; }
+      .fold-title { min-height: 40vh; padding: 60px 30px; }
+      .fold-text { padding: 40px 30px; overflow-y: visible; }
+    }
+  </style>
+</head>
+<body>
+
+ <section id="cover">
+  <div class="cover-content">
+    <svg class="cover-title" viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" aria-label="O Códice">
+      <defs>
+        <linearGradient id="waveFill" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.88" />
+          <stop offset="50%" stop-color="#ffffff" stop-opacity="1" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.88" />
+        </linearGradient>
+
+        <mask id="text-mask">
+          <rect width="100%" height="100%" fill="black"></rect>
+          <text x="350" y="108" text-anchor="middle" class="title-mask">
+            O CÓDICE
+          </text>
+        </mask>
+
+        <pattern
+          id="moving-wave"
+          patternUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          width="360"
+          height="180"
+        >
+          <path
+            d="M -180 88
+               Q -135 68 -90 88
+               T 0 88
+               T 90 88
+               T 180 88
+               T 270 88
+               T 360 88
+               V 180
+               H -180
+               Z"
+            fill="url(#waveFill)"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              from="0 0"
+              to="180 0"
+              dur="3s"
+              repeatCount="indefinite"
+            />
+          </path>
+        </pattern>
+      </defs>
+
+      <!-- texto base -->
+      <text x="350" y="108" text-anchor="middle" class="title-base">
+        O CÓDICE
+      </text>
+
+      <!-- área animada alta -->
+      <rect
+        x="0"
+        y="0"
+        width="700"
+        height="180"
+        fill="url(#moving-wave)"
+        mask="url(#text-mask)"
+      />
+    </svg>
+
+    <button class="btn-read" onclick="openBook()">Começar Leitura</button>
+  </div>
+</section>
+
+  <nav id="sidebar">
+    <div class="nav-top">
+      <div class="nav-logo">O CÓDICE</div>
+      <button class="toggle-btn" onclick="toggleNav()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-links" id="nav-list"></div>
+  </nav>
+
+  <main id="main-content">
+    <div class="two-fold" id="content-fold">
+      <section class="fold-title">
+        <div class="chapter-meta" id="chapter-label">Ensaio 01</div>
+        <h1 id="main-title">Carregando...</h1>
+      </section>
+      <section class="fold-text" id="scroll-area">
+        <div id="content-body"></div>
+        
+        <div class="content-footer">
+          <button id="prev-btn" class="footer-btn" onclick="navigate(-1)">← Anterior</button>
+          <button id="next-btn" class="footer-btn" onclick="navigate(1)">Próximo →</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const library = [
+      { title: "Momento", body: "Ontem já morreu.\nQue o ontem enterre seus defuntos.\nNão precisa de velório. Nem de caixão. Nem de vela. Nem de extremulsão.\nPassado precisa de enterro.\nUm enterro basta.\n\nE o futuro?\nAinda não existe.\nAinda não.\nEle vai cuidar de si quando for o momento.\n\nAos dias bastam seus próprios males.\nAo dia basta a maldição de pertencer ao presente.\nAo dia basta a maldição de existir.\n\nPresente é o único que existe.\nPor ser o único que existe é o único que importa.\nSó o que existe importa.\nO que não existe não importa.\nO passado não existe. O futuro não existe.\n\nSó no presente posso agir.\nAgir.\nEis a inteligência verdadeira.\nFala sem dizer uma única palavra.\nNão há necessidade de palavras quando se tem ação.\n\nO silêncio não comete erros.\nPosso ser quem quiser.\nOntem? Amanhã? Hoje?\nAgora." },
+      { title: "Convidado", body: "Angústia.\nA angústia.\nDizem: angústia de ter e tédio de possuir.\nComo um pêndulo.\nAngústia. Tédio. Angústia. Tédio.\nOscila.\nMovimento.\nOnde há movimento, há vida.\nNão dessa vez.\nNão há vida no movimento da angústia.\nHá apenas movimento. \nMovimento sem vida.\nMovimento desprezível.\nInsignificante.\nNão merece atenção.\nNão merece plateia.\nMerece um brinde de copo vazio.\nUm copo vazio cheio de indiferença.\nA angústia merece isso. O vazio merece isso. A apatia merece isso.\nMerecem todos a indiferença.\nViver anônima.\nFora dos holofotes.\nDesprezada e ignorada.\nComo uma convidada indesejada.\nSempre tem um penetra.\nA festa continua." },
+      { title: "Vazio", body: "Apatia. Vazio.\nO nome não importa. O que importa é o conteúdo.\nNão o conteúdo. Não há conteúdo no vazio.\nSó há vazio.\nUm saco sem fundo.\nTudo entra. Nada sai.\nAgudo como a desesperança." },
+      { title: "Novela", body: "“Estranho no ninho.”\nDescreve bem como me sentia.\nPertencer é engraçado.\nPode existir desejo. Pode existir vontade. Pode existir disposição.\nNada disso importa.\nSó o que importa é o elemento de pertencimento.\nSem ele não há ressonância. Sem ele não há a similaridade ansiada.\nSó o que há é quase.\nQuase não é. Quase é quase.\nEu quase morri de fome.\nNa vida, quase não existe.\nOu é ou não é.\nOu tem ou não tem.\nOu pertence ou não pertence.\nNão existe pertencimento pela metade.\nOu você tem o elemento de pertencimento ou não tem.\nEu não tinha.\nEu era o único que não tinha.\nTodos falavam sobre a novela, menos eu.\nMenos eu porque não tinha.\nNão tinha o quê?\nO elemento de pertencimento.\nEu não podia pertencer.\nEu podia desejar. Eu podia querer. Eu podia me dispor. Só não podia o que queria. Só não podia pertencer.\nNão tinha como pertencer.\nEu era um peixe ansiando por voar com os pássaros.\nEstranho no ninho.\nEu era um estranho no ninho.\nContinuo sendo.\nContinuo sendo porque nunca terei esse elemento de pertencimento.\nO ar não me serve.\nA água me serve. Na água eu pertenço.\nCansei de dar pulos e de experimentar o ar. Ele nunca me favoreceu.\nA vida nos coloca à escolha do nosso difícil.\nPermanecer ou mudar?\nNão há resposta certa. A decisão é difícil.\nTem que escolher um difícil.\nEu escolhi mudar. Mudar de lugar.\nÀs vezes, mudar de lugar é mudar de destino.\nO que não merece meu futuro não merece meu presente." },
+      { title: "Casa", body: "As paredes eram amarelas.\nTinta barata. Da mais barata. Era o que tinha.\nPor fora. Só por fora.\nPor dentro era verde.\nVerde e amarelo.\nUm retrato do Brasil.\nFalta só o azul.\nNão tinha azul.\nMas tinha vermelho.\nTinha vermelho porque estávamos no vermelho.\nTinha vermelho, mas não tinha branco.\nBranco dos canos. Canos de esgoto.\nEra o que não tinha: canos de esgoto.\nEsgoto e água encanada.\nTinha amarelo. Tinha verdade. Tinha vermelho. Só não tinha branco e muito menos azul.\nA pobreza tem muitas cores e aromas.\nSó não tem esperança. Nem brilho. Nem sonhos. Nem movimento. Nem vida.\nEntão, para que viver?\nDe que vale não ter azul, nem branco, nem brilho, nem sonhos, nem movimento, nem vida?\nDe que vale viver?\nVale para se ter a chance de ser feliz.\nA realidade não tem brilho. Não tem movimento. Não tem azul. Não tem branco.\nMesmo assim, eu ainda a prefiro. Ela tem, pelo menos, a vantagem de existir." },
+      { title: "Epitáfio", body: "Vim. Vivi. Venci. \nEsse será meu epitáfio. \nVenci, mas não o jogo do dinheiro. \nNem da fama. Nem das posses. Nem do status. \nVenci. \nEu amei? Amei. \nFui um amigo leal? Quero acreditar que sim. \nTive compaixão? Tentei.\nFiz o bem? O bem que prego muitas vezes não fiz e o mal que condeno acabei fazendo. \nCaridade, compaixão, fraternidade, bem-aventuranças? \nPecador. \nNão tive como fugir da minha natureza. \nMesmo assim, venci. \nVenci porque tive forças. \nTive forças porque tive fé. \nA fé é a força da vida. É ela quem oferece a possibilidade de viver. \nVenci porque não venci no mundo. \nNão tive sucesso. \nNão tive riqueza. \nNão tive fama. \nÉ. Não tive fama. \nTive pessoas. \nNão tive terras. \nQuem precisa de terra? \nSe precisa, de quanta terra alguém precisa? \nDo suficiente para caber o paletó final. \nNo meu caso, pequenino como sou, basta caber meu epitáfio. \nMeu epitáfio. \nEu vim. Eu vivi. Eu venci." },
+      { title: "Semente", body: "Domingo.\nUm domingo qualquer?\nNão.\nO domingo.\nDia de plantar sementes.\nDia de semeadura.\nA semeadura foi em um domingo.\nSemeadura.\nSempre à mercê do imponderável.\nIntempéries da vida.\nPrecisa de cuidado. Precisa de zelo. Precisa de cultivo.\nRequer disposição permanente.\nComo a virtude requer disposição permanente.\nEra o domingo.\nAcordou para semear.\nAtenção ao solo.\nAté para viver é preciso ter o mínimo.\nNão existe começar do zero.\nColher pressupõe plantar.\nPlantar pressupõe sementes, solo propício e disposição.\nSolo estéril não produz frutos.\nNem frutos e nem jardineiros.\nJardineiros não nascem. \nJardineiros são construídos.\nAmbiente, disposição e solo fértil.\nIsso é o mínimo.\nMínimo para a vida.\nDas plantas? Das plantas.\nDas pessoas.\nJardineiro de pessoas.\nPlantar a semente da fraternidade e da compaixão.\nEstender a mão é semear.\nEstender a mão é ser jardineiro de pessoas.\nTarefa difícil.\nTarefa impossível.\nImpossível ou não, o que controlo é minha conduta.\nControlo pouco na vida.\nE isso eu controlo.\nMinha disposição permanente eu controlo.\nEu serei um jardineiro." },
+      { title: "Tempo", body: "Tempo. \nEscasso. \nIrrecuperável. \nIncontornável. \nNada escapa ao teste do tempo. \nTempo finito. \nTempo que todos têm, mas poucos possuem. \nTic tac tic tac. \nPerdido por negligência ou soberba. \nNão dá para destocar o sino. \nNão adianta poupar quando só resta o fundo da garrafa." },
+      { title: "Subtração", body: "Subtração. \nMelhorar subtraindo. \nAdição não é a única via do aperfeiçoamento. \nAdicionar. \nAcrescentar. \nIncluir. \nSubtrair é via negativa. \nReduzir. \nDiminuir. \nEnxugar. \nO que NÃO fazer. \nO que evitar. \nDo que fugir. \nMelhorar pela subtração. \nÀs vezes, menos é mais." },
+      { title: "Imponderável", body: "Rico ou pobre. \nVelho ou novo. \nFamoso ou anônimo. \nTodos à mercê do imponderável. \nIncontrolável.\n Imprevisível. \nIncontornável. \nEstamos todos no mesmo barco. \nNo mesmo barco, não no mesmo lugar. \nO assento é individual.\n Mesmo evento. \nDiferentes desfechos. \nO comportamento dita o sinal. \nEntregarei à Fortuna." },
+      { title: "Mais. Mais. Mais.", body: "Mais. Mais. Mais.\nMais. Mais. Mais.\nQuanto mais melhor.\nDinheiro: quanto mais melhor.\nQuando eu tiver 1 milhão vou ser feliz.\nNão. É quando tiver 2.\nNão. O número é 5.\nÉ um saco sem fundo.\nDesejo na ausência.\nDesejo incessante.\nDesejo ou angústia?\nAngústia.\nAngústia transformada em tédio.\nTédio de possuir.\nO ciclo se repete.\nSó há satisfação na subtração do desejo.\nPlacar interno.\nPrincípios. Valores. Crenças.\nSó há vida possível na satisfação." },
+      { title: "Luz", body: "Haja luz!\nA escuridão é capaz de nos ensinar muitas coisas.\nUma delas, em particular, é a contemplação da luz.\nA luz não existe sem a escuridão e a escuridão não existe sem luz.\nUma precisa da outra para existir.\nEssa é a teoria dos contrastes.\nSó sei o que é luz porque vivi muito tempo na escuridão.\nNa escuridão literal e na escuridão metafórica.\nNa escuridão literal porque cresci no meio do mato, longe das mordomias da cidade grande e sem muitas oportunidades de viver na luz.\nNa escuridão metafórica porque não havia descoberto o farol que a leitura representa na vida de quem dá uma chance a ela.\nNão importa o tipo de escuridão no final das contas. Sempre haverá uma luz cintilante à espreita.\nSó precisamos abrir o nosso coração para a beleza do ordinário. Será um dia memorável e alegrador.\nUm instante de vida que vale por si mesmo.\nEm alguns desses instantes, não tão felizes assim, fiz essa pergunta: “Para que viver?”\nSe tiver a chance de encontrar esse eu que fiz esta pergunta, responderei: — pela mera chance de ser feliz na contemplação do ordinário.\nOnde houver luz, haverá felicidade.\nE que haja luz!" },
+    ];
+
+    let currentIndex = 0;
+
+    function openBook() {
+      document.getElementById('cover').classList.add('hidden');
+      document.body.classList.add('book-open');
+      loadChapter(0);
+    }
+
+    function toggleNav() {
+      const sidebar = document.getElementById('sidebar');
+      if (window.innerWidth <= 1024) { sidebar.classList.toggle('open'); }
+      else { sidebar.classList.toggle('collapsed'); }
+    }
+
+    function navigate(direction) {
+      const nextIndex = currentIndex + direction;
+      if (nextIndex >= 0 && nextIndex < library.length) {
+        loadChapter(nextIndex);
+      }
+    }
+
+    function loadChapter(index) {
+      const fold = document.getElementById('content-fold');
+      fold.classList.add('changing'); // Transition effect
+
+      setTimeout(() => {
+        currentIndex = index;
+        const item = library[index];
+        document.getElementById('main-title').textContent = item.title;
+        document.getElementById('chapter-label').textContent = `${String(index + 1).padStart(2, '0')}`;
+        
+        const content = document.getElementById('content-body');
+        content.innerHTML = '';
+        item.body.split('\n').forEach((line, i) => {
+          const p = document.createElement('p');
+          p.className = 'poem-line';
+          p.style.animationDelay = `${i * 0.05}s`;
+          p.textContent = line || '\u00A0';
+          content.appendChild(p);
+        });
+
+        // Update footer buttons
+        document.getElementById('prev-btn').disabled = index === 0;
+        document.getElementById('next-btn').disabled = index === library.length - 1;
+
+        // Update Sidebar Active
+        document.querySelectorAll('.nav-item').forEach((el, i) => {
+          el.classList.toggle('active', i === index);
+        });
+
+        fold.classList.remove('changing');
+        document.getElementById('scroll-area').scrollTo({ top: 0, behavior: 'smooth' });
+      }, 400);
+    }
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      if (!document.body.classList.contains('book-open')) return;
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") navigate(1);
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") navigate(-1);
+    });
+
+    // Touch Swipe Navigation
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+    document.addEventListener('touchend', e => {
+      const touchEndX = e.changedTouches[0].screenX;
+      if (touchStartX - touchEndX > 100) navigate(1); // Swipe Left
+      if (touchStartX - touchEndX < -100) navigate(-1); // Swipe Right
+    });
+
+    function initNav() {
+      const list = document.getElementById('nav-list');
+      library.forEach((item, i) => {
+        const div = document.createElement('div');
+        div.className = 'nav-item';
+        div.innerHTML = `<span>${String(i + 1).padStart(2, '0')}</span><span>${item.title}</span>`;
+        div.onclick = () => loadChapter(i);
+        list.appendChild(div);
+      });
+    }
+
+    initNav();
+  </script>
+</body>
+</html>
