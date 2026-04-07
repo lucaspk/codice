@@ -83,8 +83,8 @@
       flex-direction: column;
       transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s ease;
       position: relative;
-      z-index: 100;
-      transform: translateX(-100%);
+      z-index: 1200;
+      transform: translateX(0);
     }
 
 #cover {
@@ -141,7 +141,7 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-    body.book-open nav { transform: translateX(0); }
+    body:not(.book-open) nav { transform: translateX(-100%); }
     nav.collapsed { width: 60px; }
 
     .nav-top {
@@ -178,6 +178,57 @@
 
     /* --- CONTENT AREA --- */
     main { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+    .mobile-nav-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1300;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.45);
+      color: var(--foreground);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mobile-nav-btn:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.35);
+      outline-offset: 2px;
+    }
+
+    .mobile-nav-btn .bars {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .mobile-nav-btn .bars span {
+      width: 20px;
+      height: 2px;
+      background: currentColor;
+      display: block;
+    }
+
+    .nav-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      background: rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .nav-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
     .two-fold { flex: 1; display: flex; width: 100%; transition: opacity 0.5s ease; }
     .two-fold.changing { opacity: 0; }
@@ -243,7 +294,8 @@
 
     @media (max-width: 1024px) {
       nav { position: fixed; height: 100%; transform: translateX(-100%); }
-      nav.open { transform: translateX(0) !important; width: 280px; }
+      body.book-open nav.open { transform: translateX(0); width: 280px; }
+      .mobile-nav-btn { display: flex; }
       .two-fold { flex-direction: column; overflow-y: auto; }
       .fold-title { min-height: 40vh; padding: 60px 30px; }
       .fold-text { padding: 40px 30px; overflow-y: visible; }
@@ -332,7 +384,12 @@
     <div class="nav-links" id="nav-list"></div>
   </nav>
 
+  <div id="nav-overlay" class="nav-overlay" onclick="closeMobileNav()"></div>
+
   <main id="main-content">
+    <button id="mobile-nav-btn" class="mobile-nav-btn" type="button" aria-label="Abrir menu" onclick="openMobileNav()">
+      <span class="bars" aria-hidden="true"><span></span><span></span><span></span></span>
+    </button>
     <div class="two-fold" id="content-fold">
       <section class="fold-title">
         <div class="chapter-meta" id="chapter-label">Ensaio 01</div>
@@ -367,16 +424,44 @@
 
     let currentIndex = 0;
 
+    function isMobileLayout() {
+      return window.innerWidth <= 1024;
+    }
+
+    function setOverlayVisible(visible) {
+      const overlay = document.getElementById('nav-overlay');
+      overlay.classList.toggle('visible', visible);
+    }
+
+    function openMobileNav() {
+      if (!isMobileLayout()) return;
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.add('open');
+      setOverlayVisible(true);
+    }
+
+    function closeMobileNav() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.remove('open');
+      setOverlayVisible(false);
+    }
+
     function openBook() {
       document.getElementById('cover').classList.add('hidden');
       document.body.classList.add('book-open');
       loadChapter(0);
+      if (isMobileLayout()) closeMobileNav();
     }
 
     function toggleNav() {
       const sidebar = document.getElementById('sidebar');
-      if (window.innerWidth <= 1024) { sidebar.classList.toggle('open'); }
-      else { sidebar.classList.toggle('collapsed'); }
+      if (isMobileLayout()) {
+        const nextOpen = !sidebar.classList.contains('open');
+        sidebar.classList.toggle('open', nextOpen);
+        setOverlayVisible(nextOpen);
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
     }
 
     function navigate(direction) {
@@ -423,6 +508,7 @@
     // Keyboard Navigation
     window.addEventListener('keydown', (e) => {
       if (!document.body.classList.contains('book-open')) return;
+      if (e.key === "Escape") closeMobileNav();
       if (e.key === "ArrowRight" || e.key === "ArrowDown") navigate(1);
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") navigate(-1);
     });
@@ -442,12 +528,23 @@
         const div = document.createElement('div');
         div.className = 'nav-item';
         div.innerHTML = `<span>${String(i + 1).padStart(2, '0')}</span><span>${item.title}</span>`;
-        div.onclick = () => loadChapter(i);
+        div.onclick = () => {
+          loadChapter(i);
+          if (isMobileLayout()) closeMobileNav();
+        };
         list.appendChild(div);
       });
     }
 
     initNav();
+
+    window.addEventListener('resize', () => {
+      const sidebar = document.getElementById('sidebar');
+      if (!isMobileLayout()) {
+        setOverlayVisible(false);
+        sidebar.classList.remove('open');
+      }
+    });
   </script>
 </body>
 </html>
